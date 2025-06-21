@@ -13,12 +13,12 @@ export default function Sidebar() {
   }, []);
 
   const links = [
-    { to: '/dashboard',      label: 'Dashboard',      roles: ['super-admin','admin','user'] },
-  { to: '/tenants',        label: 'Tenants',        roles: ['super-admin'] },
-  { to: '/users',          label: 'Utilizadores',   roles: ['super-admin','admin'] }
-    { to: '/devices',        label: 'Dispositivos',   roles: ['super-admin','admin','user'] },
- { to: '/geofence',       label: 'Geofence',       roles: ['super-admin','admin'] }
-  ];
+  { to: '/dashboard',      label: 'Dashboard',    roles: ['super-admin','admin','user'] },
+  { to: '/tenants',        label: 'Tenants',      roles: ['super-admin'] },
+  { to: '/users',          label: 'Utilizadores', roles: ['super-admin','admin'] },
+  { to: '/devices',        label: 'Dispositivos', roles: ['super-admin','admin','user'] },
+  { to: '/geofence/DEVICE_ID', label: 'Geofence', roles: ['super-admin','admin'] }
+];
 
   return (
     <aside className="w-64 bg-gray-100 p-4 overflow-auto">
