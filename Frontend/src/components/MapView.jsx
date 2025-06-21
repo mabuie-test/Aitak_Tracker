@@ -17,7 +17,11 @@ export default function MapView({ device }) {
   }, [device, socket]);
 
   if (!device) {
-    return <div className="flex-1 flex items-center justify-center text-gray-500">Selecione um dispositivo</div>;
+    return (
+      <div className="flex-1 flex items-center justify-center text-gray-500">
+        Selecione um dispositivo
+      </div>
+    );
   }
 
   const center = positions.length
@@ -25,9 +29,15 @@ export default function MapView({ device }) {
     : [device.geofence?.center.lat || 0, device.geofence?.center.lng || 0];
 
   return (
-    <MapContainer center={center} zoom={15} className="flex-1">
+    <MapContainer
+      center={center}
+      zoom={15}
+      className="flex-1 h-full"  // ocupa todo o espaço disponível
+    >
       <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-      {positions.map((pos, i) => <Marker key={i} position={pos} />)}
+      {positions.map((pos, i) => (
+        <Marker key={i} position={pos} />
+      ))}
       <Polyline positions={positions} />
       {device.geofence?.center && (
         <Circle
