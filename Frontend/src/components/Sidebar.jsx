@@ -13,10 +13,11 @@ export default function Sidebar() {
   }, []);
 
   const links = [
-    { to: '/dashboard',      label: 'Dashboard',          roles: ['super-admin','admin','user'] },
-    { to: '/tenants',        label: 'Tenants',            roles: ['super-admin'] },
-    { to: '/users',          label: 'Utilizadores',       roles: ['admin'] },
-    { to: '/devices',        label: 'Dispositivos',       roles: ['admin','user'] }
+    { to: '/dashboard',      label: 'Dashboard',      roles: ['super-admin','admin','user'] },
+  { to: '/tenants',        label: 'Tenants',        roles: ['super-admin'] },
+  { to: '/users',          label: 'Utilizadores',   roles: ['super-admin','admin'] }
+    { to: '/devices',        label: 'Dispositivos',   roles: ['super-admin','admin','user'] },
+ { to: '/geofence',       label: 'Geofence',       roles: ['super-admin','admin'] }
   ];
 
   return (
