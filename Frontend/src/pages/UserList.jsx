@@ -1,44 +1,54 @@
-// routes/userRoutes.js
-const express = require('express');
-const bcrypt  = require('bcryptjs');
-const User    = require('../models/User');
-const auth    = require('../middleware/authMiddleware');
-const tenant  = require('../middleware/tenantMiddleware');
-const role    = require('../middleware/roleMiddleware');
-const router  = express.Router();
 
-// Listar utilizadores (admin e super-admin)
-router.get(
-  '/',
-  auth,
-  tenant,
-  role(['admin','super-admin']),   // ← agora aceita ambos
-  async (req, res) => {
-    const users = await User.find(
-      { tenantId: req.tenantId },
-      'username role'
-    );
-    res.json(users);
-  }
-);
+import React, { useEffect, useState } from 'react';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
-// Criar utilizador (admin e super-admin)
-router.post(
-  '/',
-  auth,
-  tenant,
-  role(['admin','super-admin']),
-  async (req, res) => {
-    const { username, password, role: newRole } = req.body;
-    const hash = await bcrypt.hash(password, 10);
-    const u = await User.create({
-      username,
-      passwordHash: hash,
-      role: newRole,
-      tenantId: req.tenantId
-    });
-    res.status(201).json({ _id: u._id, username: u.username, role: u.role });
-  }
-);
+export default function UserList() {
+  const [users, setUsers] = useState([]);
+  const nav = useNavigate();
 
-module.exports = router;
+  useEffect(() => {
+    axios.get(`${import.meta.env.VITE_API_URL}/api/users`)
+      .then(res => setUsers(res.data))
+      .catch(console.error);
+  }, []);
+
+  return (
+    <div className="p-4">
+      <div className="flex justify-between items-center mb-4">
+        <h1 className="text-2xl">Utilizadores</h1>
+        <button
+          onClick={() => nav('/users/new')}
+          className="bg-green-500 text-white px-3 py-1 rounded"
+        >
+          + Novo
+        </button>
+      </div>
+      <table className="w-full table-auto border">
+        <thead className="bg-gray-200">
+          <tr>
+            <th className="p-2">Username</th>
+            <th className="p-2">Função</th>
+            <th className="p-2">Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {users.map(u => (
+            <tr key={u._id} className="border-t">
+              <td className="p-2">{u.username}</td>
+              <td className="p-2">{u.role}</td>
+              <td className="p-2">
+                <button
+                  onClick={() => nav(`/users/${u._id}`)}
+                  className="text-blue-600 hover:underline"
+                >
+                  Editar
+                </button>
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
