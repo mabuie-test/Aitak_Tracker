@@ -25,11 +25,16 @@ export default function DeviceForm() {
     const method = id ? 'put' : 'post';
     const url = `${import.meta.env.VITE_API_URL}/api/devices${id ? `/${id}` : ''}`;
     axios[method](url, form)
-      .then(() => nav('/devices'))
-      .catch(err => {
-        console.error(err);
-        alert('Falha ao guardar dispositivo');
-      });
+           .then(() => nav('/devices'))
+   .catch(err => {
+      // Mostra no console todo o objecto de erro
+     console.error('Erro ao chamar', method.toUpperCase(), url, err);
+     // Se o servidor retornou JSON com campo error, exibe-o
+      const msg = err.response?.data?.error
+         || err.response?.data?.message
+         || err.message;
+      alert(`Falha ao guardar dispositivo: ${msg}`);
+   });
   };
 
   return (
