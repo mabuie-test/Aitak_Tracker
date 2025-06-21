@@ -26,7 +26,8 @@ export default function TenantList() {
       <table className="w-full table-auto border">
         <thead className="bg-gray-200">
           <tr>
-            <th className="p-2">Nome</th>
+            <th className="p-2">ID</th>                {/* ← NOVO */}
++            <th className="p-2">Nome</th>
             <th className="p-2">Email</th>
             <th className="p-2">Plano</th>
             <th className="p-2">Ações</th>
