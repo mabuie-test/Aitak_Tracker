@@ -1,5 +1,6 @@
 const express = require('express');
 const Device  = require('../models/Device');
+const User    = require('../models/User');
 const auth    = require('../middleware/authMiddleware');
 const tenant  = require('../middleware/tenantMiddleware');
 const role    = require('../middleware/roleMiddleware');
@@ -8,26 +9,37 @@ const router  = express.Router();
 // todas as rotas requerem autenticação
 router.use(auth);
 
-// create device (admin ou super-admin)
+// CREATE device (admin ou super-admin)
 router.post(
   '/',
-  // permite super-admin e admin
   role(['super-admin', 'admin']),
   async (req, res) => {
     try {
-      // se for super-admin, usa tenantId vindo no body; senão, usa o tenant do token
+      const { imei, label, tenantId: bodyTenantId, owner } = req.body;
+      // determina tenantId
       const tenantId = req.user.role === 'super-admin'
-        ? req.body.tenantId
+        ? bodyTenantId
         : req.user.tenantId;
 
-      if (!tenantId) {
+      if (req.user.role === 'super-admin' && !tenantId) {
         return res.status(400).json({ error: 'tenantId é obrigatório para super-admin' });
       }
 
+      // valida owner, se fornecido
+      let ownerId = null;
+      if (owner) {
+        const u = await User.findOne({ _id: owner, tenantId });
+        if (!u) {
+          return res.status(400).json({ error: 'Owner inválido ou não pertence ao tenant' });
+        }
+        ownerId = owner;
+      }
+
       const d = await Device.create({ 
-        imei: req.body.imei,
-        label: req.body.label,
-        tenantId 
+        imei, 
+        label, 
+        tenantId,
+        owner: ownerId
       });
 
       return res.status(201).json(d);
@@ -38,22 +50,22 @@ router.post(
   }
 );
 
-// lista dispositivos (admin e super-admin)
+// LIST devices (admin e super-admin)
 router.get(
   '/',
   role(['super-admin', 'admin']),
   tenant,
   async (req, res) => {
     const filter = req.user.role === 'super-admin'
-      ? {}                // super-admin vê todos os tenants
+      ? {}
       : { tenantId: req.user.tenantId };
 
-    const list = await Device.find(filter);
+    const list = await Device.find(filter).populate('owner', 'username');
     res.json(list);
   }
 );
 
-// obter um dispositivo
+// GET one device
 router.get(
   '/:id',
   role(['super-admin', 'admin']),
@@ -63,13 +75,13 @@ router.get(
       ? { _id: req.params.id }
       : { _id: req.params.id, tenantId: req.user.tenantId };
 
-    const d = await Device.findOne(filter);
+    const d = await Device.findOne(filter).populate('owner', 'username');
     if (!d) return res.status(404).json({ error: 'Dispositivo não encontrado' });
     res.json(d);
   }
 );
 
-// update device (admin e super-admin)
+// UPDATE device (admin e super-admin)
 router.put(
   '/:id',
   role(['super-admin', 'admin']),
@@ -80,14 +92,28 @@ router.put(
         ? { _id: req.params.id }
         : { _id: req.params.id, tenantId: req.user.tenantId };
 
-      const update = {
-        ...(req.body.imei   && { imei: req.body.imei }),
-        ...(req.body.label  && { label: req.body.label }),
-        ...(req.body.status && { status: req.body.status }),
-        ...(req.body.geofence && { geofence: req.body.geofence })
-      };
+      const { imei, label, status, geofence, owner } = req.body;
 
-      const d = await Device.findOneAndUpdate(filter, update, { new: true });
+      const update = {};
+      if (imei) update.imei = imei;
+      if (label) update.label = label;
+      if (status) update.status = status;
+      if (geofence) update.geofence = geofence;
+
+      // valida owner, se foi enviado
+      if (typeof owner !== 'undefined') {
+        if (owner) {
+          const u = await User.findOne({ _id: owner, tenantId: req.user.role === 'super-admin' ? (req.body.tenantId || req.user.tenantId) : req.user.tenantId });
+          if (!u) {
+            return res.status(400).json({ error: 'Owner inválido ou não pertence ao tenant' });
+          }
+          update.owner = owner;
+        } else {
+          update.owner = null;
+        }
+      }
+
+      const d = await Device.findOneAndUpdate(filter, update, { new: true }).populate('owner', 'username');
       if (!d) return res.status(404).json({ error: 'Dispositivo não encontrado' });
       res.json(d);
     } catch (err) {
