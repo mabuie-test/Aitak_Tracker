@@ -17,6 +17,8 @@ app.get('/health', (_, res) => res.sendStatus(200));
 
 // bootstrap endpoint (use once)
 app.use('/bootstrap', bootstrap);
+//Monta user
+app.use('/api/users', userRoutes);
 
 // all API routes under /api
 app.use('/api', allRoutes);
