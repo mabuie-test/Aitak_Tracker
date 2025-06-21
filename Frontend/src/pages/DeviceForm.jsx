@@ -7,23 +7,29 @@ export default function DeviceForm() {
   const [form, setForm] = useState({ imei: '', label: '' });
   const nav = useNavigate();
 
+  // Se for edição, carrega dados existentes
   useEffect(() => {
     if (id) {
       axios.get(`${import.meta.env.VITE_API_URL}/api/devices/${id}`)
-        .then(res => setForm(res.data))
+        .then(res => setForm({ imei: res.data.imei, label: res.data.label }))
         .catch(console.error);
     }
   }, [id]);
 
-  const handleChange = e => setForm({ ...form, [e.target.name]: e.target.value });
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
 
-  const handleSubmit = e => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const method = id ? 'put' : 'post';
-    const url    = `${import.meta.env.VITE_API_URL}/api/devices${id ? `/${id}` : ''}`;
+    const url = `${import.meta.env.VITE_API_URL}/api/devices${id ? `/${id}` : ''}`;
     axios[method](url, form)
       .then(() => nav('/devices'))
-      .catch(console.error);
+      .catch(err => {
+        console.error(err);
+        alert('Falha ao guardar dispositivo');
+      });
   };
 
   return (
@@ -49,7 +55,10 @@ export default function DeviceForm() {
             className="w-full border p-2 rounded"
           />
         </label>
-        <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">
+        <button
+          type="submit"  // ← garante que dispara o onSubmit
+          className="bg-blue-600 text-white px-4 py-2 rounded"
+        >
           Guardar
         </button>
       </form>
