@@ -36,9 +36,10 @@ export default function TenantList() {
         <tbody>
           {tenants.map(t => (
             <tr key={t._id} className="border-t">
-              <td className="p-2">{t.name}</td>
-              <td className="p-2">{t.contactEmail}</td>
-              <td className="p-2">{t.plan}</td>
+               <td className="p-2 font-mono text-sm">{t._id}</td> {/* ← mostra o ID */}
+            <td className="p-2">{t.name}</td>
+             <td className="p-2">{t.contactEmail}</td>
+         <td className="p-2">{t.plan}</td>
               <td className="p-2">
                 <button
                   onClick={() => nav(`/tenants/${t._id}`)}
