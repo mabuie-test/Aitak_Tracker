@@ -8,45 +8,51 @@ export default function DeviceForm() {
     imei: '',
     label: '',
     tenantId: '',
-    owner: ''
+    owner: '',
+    status: 'active'
   });
   const [tenants, setTenants] = useState([]);
   const [users, setUsers]     = useState([]);
   const [role, setRole]       = useState(null);
   const nav = useNavigate();
 
-  // decodifica o token para obter role e tenantId, busca tenants e users
+  // decodifica token e carrega tenants/users conforme role
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) return;
     const payload = JSON.parse(atob(token.split('.')[1]));
     setRole(payload.role);
 
-    // se super-admin, busca tenants e users globais
+    // super-admin: busca todos tenants e depois todos users de cada tenant selecionado
     if (payload.role === 'super-admin') {
-      axios.get(`${import.meta.env.VITE_API_URL}/api/tenants`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => setTenants(res.data))
-      .catch(console.error);
-
-      axios.get(`${import.meta.env.VITE_API_URL}/api/users`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
-      .then(res => setUsers(res.data))
-      .catch(console.error);
+      axios.get(`${import.meta.env.VITE_API_URL}/api/tenants`, { headers: { Authorization: `Bearer ${token}` } })
+        .then(res => setTenants(res.data))
+        .catch(console.error);
     } else {
-      // admin normal: define tenantId do token e busca users desse tenant
+      // admin: seta tenantId e busca users do seu tenant
       setForm(f => ({ ...f, tenantId: payload.tenantId }));
+    }
+  }, []);
+
+  // ao escolher um tenant (super-admin), recarrega lista de users
+  useEffect(() => {
+    if (role === 'super-admin' && form.tenantId) {
       axios.get(`${import.meta.env.VITE_API_URL}/api/users`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      })
+      .then(res => setUsers(res.data.filter(u => u.tenantId === form.tenantId)))
+      .catch(console.error);
+    }
+    if (role === 'admin') {
+      axios.get(`${import.meta.env.VITE_API_URL}/api/users`, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
       })
       .then(res => setUsers(res.data))
       .catch(console.error);
     }
-  }, []);
+  }, [form.tenantId, role]);
 
-  // se for edição, carrega dados existentes
+  // carrega dados existentes se for edição
   useEffect(() => {
     if (!id) return;
     axios.get(`${import.meta.env.VITE_API_URL}/api/devices/${id}`, {
@@ -56,17 +62,18 @@ export default function DeviceForm() {
       imei: res.data.imei || '',
       label: res.data.label || '',
       tenantId: res.data.tenantId || '',
-      owner: res.data.owner?._id || ''
+      owner: res.data.owner?._id || '',
+      status: res.data.status || 'active'
     }))
     .catch(console.error);
   }, [id]);
 
-  const handleChange = (e) => {
+  const handleChange = e => {
     const { name, value } = e.target;
     setForm(f => ({ ...f, [name]: value }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = e => {
     e.preventDefault();
     const method = id ? 'put' : 'post';
     const url = `${import.meta.env.VITE_API_URL}/api/devices${id ? `/${id}` : ''}`;
@@ -75,7 +82,7 @@ export default function DeviceForm() {
     })
     .then(() => nav('/devices'))
     .catch(err => {
-      console.error(err);
+      console.error('Erro ao salvar dispositivo:', err);
       const msg = err.response?.data?.error || err.message;
       alert(`Falha ao guardar dispositivo: ${msg}`);
     });
@@ -85,7 +92,7 @@ export default function DeviceForm() {
     <div className="p-4">
       <h1 className="text-2xl mb-4">{id ? 'Editar' : 'Novo'} Dispositivo</h1>
       <form onSubmit={handleSubmit} className="max-w-md space-y-4">
-        {/* Super-admin escolhe Tenant */}
+        {/* super-admin escolhe tenant */}
         {role === 'super-admin' && (
           <label className="block">
             Tenant
@@ -129,7 +136,23 @@ export default function DeviceForm() {
           />
         </label>
 
-        {/* Owner (dono do veículo) */}
+        {/* Status (edição) */}
+        {id && (
+          <label className="block">
+            Status
+            <select
+              name="status"
+              value={form.status}
+              onChange={handleChange}
+              className="w-full border p-2 rounded"
+            >
+              <option value="active">Active</option>
+              <option value="blocked">Blocked</option>
+            </select>
+          </label>
+        )}
+
+        {/* Dono do veículo */}
         <label className="block">
           Dono do Veículo
           <select
@@ -142,13 +165,12 @@ export default function DeviceForm() {
             <option value="">Selecione um utilizador</option>
             {users.map(u => (
               <option key={u._id} value={u._id}>
-                {u.username} ({u.role})
+                {u.username}
               </option>
             ))}
           </select>
         </label>
 
-        {/* Submit */}
         <button
           type="submit"
           className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
